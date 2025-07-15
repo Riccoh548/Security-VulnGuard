@@ -1,13 +1,26 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 
+type Vulnerability = {
+  title: string;
+  severity: "Low" | "Medium" | "High" | "Critical";
+  category: string;
+  description: string;
+  affected_component: string;
+  remediation_steps: string;
+  ai_priority_score: number;
+  ai_summary: string;
+  cvss_score?: number;
+  cve_id?: string | null;
+};
+
 export class WebScanner {
   constructor(
     private supabase: SupabaseClient,
     private scanId: string,
   ) {}
 
-  async scan(target: string, config: any = {}) {
-    console.log(Starting web application scan for ${target})
+  async scan(target: string, config: Record<string, any> = {}) {
+    console.log(`Starting web application scan for ${target}`)
 
     try {
       await this.updateProgress(5, "Initializing web application scan...")
@@ -38,32 +51,32 @@ export class WebScanner {
       await this.sleep(1000)
 
       await this.updateProgress(100, "Web application scan completed")
-      console.log(Web application scan completed for ${target})
+      console.log(`Web application scan completed for ${target}`)
     } catch (error) {
       console.error("Web application scan error:", error)
       throw error
     }
   }
 
-  private async webCrawling(target: string, config: any) {
+  private async webCrawling(target: string, config: Record<string, any>) {
     // Simulate web crawling findings
-    const crawlFindings = [
+    const crawlFindings: Vulnerability[] = [
       {
         title: "Directory Listing Enabled",
-        severity: "Medium" as const,
+        severity: "Medium",
         category: "Web Application",
         description: "Directory listing is enabled, potentially exposing sensitive files and directory structure.",
-        affected_component: ${target}/uploads/,
+        affected_component: `${target}/uploads/`,
         remediation_steps: "Disable directory listing in web server configuration.",
         ai_priority_score: 55,
         ai_summary: "Directory listing exposure can reveal sensitive information. Should be disabled.",
       },
       {
         title: "Sensitive File Exposed",
-        severity: "High" as const,
+        severity: "High",
         category: "Web Application",
         description: "Sensitive configuration file is accessible via web browser.",
-        affected_component: ${target}/.env,
+        affected_component: `${target}/.env`,
         remediation_steps: "Move sensitive files outside web root or restrict access via web server configuration.",
         ai_priority_score: 85,
         ai_summary: "Exposed configuration files can contain credentials and sensitive data. Immediate action required.",
@@ -77,14 +90,14 @@ export class WebScanner {
     }
   }
 
-  private async owaspTop10Testing(target: string, config: any) {
-    const owaspVulns = [
+  private async owaspTop10Testing(target: string, config: Record<string, any>) {
+    const owaspVulns: Vulnerability[] = [
       {
         title: "A01:2021 – Broken Access Control",
-        severity: "Critical" as const,
+        severity: "Critical",
         category: "Web Application",
         description: "Application fails to properly restrict access to authenticated functionality.",
-        affected_component: ${target}/admin/,
+        affected_component: `${target}/admin/`,
         remediation_steps:
           "Implement proper access controls, validate user permissions on server-side, and use principle of least privilege.",
         ai_priority_score: 95,
@@ -92,27 +105,27 @@ export class WebScanner {
       },
       {
         title: "A02:2021 – Cryptographic Failures",
-        severity: "High" as const,
+        severity: "High",
         category: "Web Application",
         description: "Sensitive data transmitted without proper encryption or using weak cryptographic algorithms.",
-        affected_component: ${target}/login,
+        affected_component: `${target}/login`,
         remediation_steps: "Implement HTTPS everywhere, use strong encryption algorithms, and protect data at rest.",
         ai_priority_score: 80,
         ai_summary: "Cryptographic failures expose sensitive data. Implement strong encryption practices.",
       },
       {
         title: "A03:2021 – Injection",
-        severity: "Critical" as const,
+        severity: "Critical",
         category: "Web Application",
         description: "Application is vulnerable to injection attacks including SQL, NoSQL, and command injection.",
-        affected_component: ${target}/search,
+        affected_component: `${target}/search`,
         remediation_steps: "Use parameterized queries, input validation, and output encoding.",
         ai_priority_score: 90,
         ai_summary: "Injection vulnerabilities can lead to data breach and system compromise. High priority fix.",
       },
       {
         title: "A05:2021 – Security Misconfiguration",
-        severity: "Medium" as const,
+        severity: "Medium",
         category: "Web Application",
         description: "Application has insecure default configurations or missing security hardening.",
         affected_component: target,
@@ -122,10 +135,10 @@ export class WebScanner {
       },
       {
         title: "A06:2021 – Vulnerable and Outdated Components",
-        severity: "High" as const,
+        severity: "High",
         category: "Web Application",
         description: "Application uses components with known vulnerabilities or outdated versions.",
-        affected_component: ${target} (jQuery 1.8.3),
+        affected_component: `${target} (jQuery 1.8.3)`,
         remediation_steps: "Update all components to latest versions and implement dependency scanning.",
         ai_priority_score: 75,
         ai_summary: "Outdated components contain known vulnerabilities. Regular updates essential for security.",
@@ -139,16 +152,16 @@ export class WebScanner {
     }
   }
 
-  private async sqlInjectionTesting(target: string, config: any) {
-    const sqlInjectionVulns = [
+  private async sqlInjectionTesting(target: string, config: Record<string, any>) {
+    const sqlInjectionVulns: Vulnerability[] = [
       {
         title: "SQL Injection in Search Parameter",
-        severity: "Critical" as const,
+        severity: "Critical",
         category: "Web Application",
         cve_id: null,
         cvss_score: 9.8,
         description: "SQL injection vulnerability detected in search parameter allowing database manipulation.",
-        affected_component: ${target}/search?q=,
+        affected_component: `${target}/search?q=`,
         remediation_steps:
           "Use parameterized queries or prepared statements. Implement input validation and sanitization.",
         ai_priority_score: 95,
@@ -157,11 +170,11 @@ export class WebScanner {
       },
       {
         title: "Blind SQL Injection in User Profile",
-        severity: "High" as const,
+        severity: "High",
         category: "Web Application",
         cvss_score: 8.1,
         description: "Blind SQL injection vulnerability in user profile update functionality.",
-        affected_component: ${target}/profile/update,
+        affected_component: `${target}/profile/update`,
         remediation_steps: "Implement parameterized queries and proper input validation for all user inputs.",
         ai_priority_score: 85,
         ai_summary: "Blind SQL injection can be exploited to extract sensitive data. Requires immediate attention.",
@@ -175,26 +188,26 @@ export class WebScanner {
     }
   }
 
-  private async xssTesting(target: string, config: any) {
-    const xssVulns = [
+  private async xssTesting(target: string, config: Record<string, any>) {
+    const xssVulns: Vulnerability[] = [
       {
         title: "Reflected Cross-Site Scripting (XSS)",
-        severity: "Medium" as const,
+        severity: "Medium",
         category: "Web Application",
         cvss_score: 6.1,
         description: "Reflected XSS vulnerability in search functionality allows script injection.",
-        affected_component: ${target}/search,
+        affected_component: `${target}/search`,
         remediation_steps: "Implement proper output encoding, input validation, and Content Security Policy (CSP).",
         ai_priority_score: 70,
         ai_summary: "Reflected XSS can be used for session hijacking and phishing attacks. Implement proper encoding.",
       },
       {
         title: "Stored Cross-Site Scripting (XSS)",
-        severity: "High" as const,
+        severity: "High",
         category: "Web Application",
         cvss_score: 8.8,
         description: "Stored XSS vulnerability in comment system allows persistent script injection.",
-        affected_component: ${target}/comments,
+        affected_component: `${target}/comments`,
         remediation_steps:
           "Sanitize all user inputs, implement output encoding, and use Content Security Policy headers.",
         ai_priority_score: 85,
@@ -202,11 +215,11 @@ export class WebScanner {
       },
       {
         title: "DOM-based Cross-Site Scripting (XSS)",
-        severity: "Medium" as const,
+        severity: "Medium",
         category: "Web Application",
         cvss_score: 6.5,
         description: "DOM-based XSS vulnerability in client-side JavaScript code.",
-        affected_component: ${target}/dashboard.js,
+        affected_component: `${target}/dashboard.js`,
         remediation_steps: "Review and secure client-side JavaScript code, avoid dangerous DOM manipulation methods.",
         ai_priority_score: 65,
         ai_summary: "DOM-based XSS occurs in client-side code. Review JavaScript for unsafe DOM operations.",
@@ -220,14 +233,14 @@ export class WebScanner {
     }
   }
 
-  private async authenticationTesting(target: string, config: any) {
-    const authVulns = [
+  private async authenticationTesting(target: string, config: Record<string, any>) {
+    const authVulns: Vulnerability[] = [
       {
         title: "Weak Password Policy",
-        severity: "Medium" as const,
+        severity: "Medium",
         category: "Web Application",
         description: "Application allows weak passwords without complexity requirements.",
-        affected_component: ${target}/register,
+        affected_component: `${target}/register`,
         remediation_steps:
           "Implement strong password policy with minimum length, complexity requirements, and password history.",
         ai_priority_score: 60,
@@ -235,31 +248,31 @@ export class WebScanner {
       },
       {
         title: "Session Fixation Vulnerability",
-        severity: "Medium" as const,
+        severity: "Medium",
         category: "Web Application",
         cvss_score: 5.4,
         description: "Application does not regenerate session ID after successful authentication.",
-        affected_component: ${target}/login,
+        affected_component: `${target}/login`,
         remediation_steps: "Regenerate session ID after authentication and implement proper session management.",
         ai_priority_score: 65,
         ai_summary: "Session fixation allows attackers to hijack user sessions. Regenerate session IDs properly.",
       },
       {
         title: "Missing Account Lockout",
-        severity: "Medium" as const,
+        severity: "Medium",
         category: "Web Application",
         description: "No account lockout mechanism after multiple failed login attempts.",
-        affected_component: ${target}/login,
+        affected_component: `${target}/login`,
         remediation_steps: "Implement account lockout after failed attempts, CAPTCHA, and rate limiting.",
         ai_priority_score: 55,
         ai_summary: "Missing lockout mechanism enables brute force attacks. Implement rate limiting and lockouts.",
       },
       {
         title: "Insecure Password Reset",
-        severity: "High" as const,
+        severity: "High",
         category: "Web Application",
         description: "Password reset functionality uses predictable tokens or lacks proper validation.",
-        affected_component: ${target}/reset-password,
+        affected_component: `${target}/reset-password`,
         remediation_steps: "Use cryptographically secure random tokens with expiration and single-use validation.",
         ai_priority_score: 80,
         ai_summary: "Insecure password reset can lead to account takeover. Use secure token generation and validation.",
@@ -273,11 +286,11 @@ export class WebScanner {
     }
   }
 
-  private async securityHeadersTesting(target: string, config: any) {
-    const headerVulns = [
+  private async securityHeadersTesting(target: string, config: Record<string, any>) {
+    const headerVulns: Vulnerability[] = [
       {
         title: "Missing Content Security Policy (CSP)",
-        severity: "Medium" as const,
+        severity: "Medium",
         category: "Web Application",
         description: "Application lacks Content Security Policy headers, increasing XSS risk.",
         affected_component: target,
@@ -287,7 +300,7 @@ export class WebScanner {
       },
       {
         title: "Missing HTTP Strict Transport Security (HSTS)",
-        severity: "Medium" as const,
+        severity: "Medium",
         category: "Web Application",
         description: "Application does not enforce HTTPS connections through HSTS headers.",
         affected_component: target,
@@ -307,14 +320,14 @@ export class WebScanner {
   // --- MISSING METHODS IMPLEMENTATION ---
   private async updateProgress(percent: number, message: string) {
     // Stub: In a real implementation, this would update scan progress in DB or emit events
-    console.log(Progress: ${percent}% - ${message})
+    console.log(`Progress: ${percent}% - ${message}`)
   }
 
   private async sleep(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms))
   }
 
-  private async createVulnerability(vuln: any) {
+  private async createVulnerability(vuln: Vulnerability) {
     // Stub: In a real implementation, this would save the vulnerability to the database
     console.log("Vulnerability found:", vuln)
   }
